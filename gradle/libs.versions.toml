@@ -1,5 +1,6 @@
 # libs.versions.toml
 [versions]
+wearCompose = "1.5.6"
 gradlePlugin = "8.13.2"
 googleServices = "4.4.4"
 kotlin = "2.2.21"
@@ -32,6 +33,7 @@ android-test = { id = "com.android.test", version.ref = "gradlePlugin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+android-application = { id = "com.android.application", version.ref = "gradlePlugin" }
 
 [libraries]
 com-android-tools-build = { group = "com.android.tools.build", name = "gradle", version.ref = "gradlePlugin" }
@@ -54,6 +56,9 @@ com-google-android-gms-playservices-measurement = { group = "com.google.android.
 com-google-android-gms-playservices-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version = "19.0.0" }
 com-google-android-places = { group = "com.google.android.libraries.places", name = "places", version = "4.1.0" }
 com-google-android-gms-playservices-location = { group = "com.google.android.gms", name = "play-services-location", version = "21.3.0" }
+androidx-wear-compose-material    = { group = "androidx.wear.compose", name = "compose-material",    version.ref = "wearCompose" }
+androidx-wear-compose-foundation  = { group = "androidx.wear.compose", name = "compose-foundation",  version.ref = "wearCompose" }
+androidx-wear-compose-navigation  = { group = "androidx.wear.compose", name = "compose-navigation",  version.ref = "wearCompose" }
 
 # Check for bugfix in MaterialDataPicker and remove workaround in DateUtil::mergeUtcDateToTimestamp
 # https://github.com/material-components/material-components-android/issues/4373

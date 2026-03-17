@@ -2,13 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- ═══ PERMISSIONS BLE ══════════════════════════════════════════ -->
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <uses-permission android:name="android.permission.BLUETOOTH"
-        android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
-        android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -18,25 +15,18 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <!-- ═══ FEATURE BLE ══════════════════════════════════════════════ -->
+    <!-- ═══ FEATURE WEAR OS STANDALONE ══════════════════════════════
+         android.hardware.type.watch = app Wear OS native
+         standalone = true → fonctionne sans app téléphone            -->
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
-
-    <!-- ═══ DÉCLARATION STANDALONE WEAR OS ═══════════════════════════
-         android.hardware.type.watch  = c'est une app Wear OS
-         com.google.android.wearable.standalone = true
-         → l'app fonctionne SANS app compagnon sur le téléphone        -->
-    <uses-feature
-        android:name="android.hardware.type.watch"
-        android:required="true" />
+    <uses-feature android:name="android.hardware.type.watch" android:required="true" />
 
     <application
         android:name=".WearApplication"
         android:label="AAPS Wear"
-        android:icon="@mipmap/ic_launcher"
-        android:theme="@android:style/Theme.DeviceDefault"
-        android:allowBackup="false">
+        android:theme="@android:style/Theme.DeviceDefault">
 
-        <!-- Déclare l'app comme standalone — clé obligatoire -->
+        <!-- Standalone : pas besoin de l'app compagnon téléphone -->
         <meta-data
             android:name="com.google.android.wearable.standalone"
             android:value="true" />
@@ -44,30 +34,22 @@
         <!-- ═══ ACTIVITÉ PRINCIPALE ══════════════════════════════════ -->
         <activity
             android:name=".ui.MainActivity"
-            android:exported="true"
-            android:taskAffinity=""
-            android:launchMode="singleTop">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- ═══ BLE FOREGROUND SERVICE ═══════════════════════════════
-             foregroundServiceType="connectedDevice" requis Android 14+
-             stopWithTask="false" : survit si l'app est swipée         -->
+        <!-- ═══ BLE FOREGROUND SERVICE ═══════════════════════════════ -->
         <service
             android:name=".WearBleService"
-            android:enabled="true"
-            android:exported="false"
             android:foregroundServiceType="connectedDevice"
             android:stopWithTask="false" />
 
-        <!-- ═══ BOOT RECEIVER ════════════════════════════════════════
-             Redémarre WearBleService après reboot de la montre         -->
+        <!-- ═══ BOOT RECEIVER ════════════════════════════════════════ -->
         <receiver
             android:name=".BootReceiver"
-            android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

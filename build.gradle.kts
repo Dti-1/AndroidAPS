@@ -1,12 +1,20 @@
-// build.gradle.kts — Module wear-medtrum
+// build.gradle.kts — Module wear-medtrum (Standalone Wear OS)
 //
-// App Wear OS STANDALONE — indépendante du téléphone.
+// PRÉREQUIS dans gradle/libs.versions.toml :
 //
-// PRÉREQUIS : ajouter dans gradle/libs.versions.toml section [plugins] :
+// [versions]
+//   wearCompose = "1.5.6"
+//
+// [plugins]
 //   android-application = { id = "com.android.application", version.ref = "gradlePlugin" }
+//
+// [libraries]
+//   androidx-wear-compose-material   = { group = "androidx.wear.compose", name = "compose-material",   version.ref = "wearCompose" }
+//   androidx-wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wearCompose" }
+//   androidx-wear-compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "wearCompose" }
 
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.application)  // nécessite l'ajout dans libs.versions.toml
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.compose.compiler)
@@ -18,7 +26,7 @@ android {
 
     defaultConfig {
         applicationId = "app.aaps.wear.medtrum"
-        minSdk        = 30   // Wear OS 3.0 = Android 11
+        minSdk        = 30
         targetSdk     = 35
         versionCode   = 1
         versionName   = "1.0.0"
@@ -43,31 +51,29 @@ dependencies {
     // ── Wear OS ──────────────────────────────────────────────────────
     implementation(libs.androidx.wear)
     implementation(libs.com.google.android.gms.playservices.wearable)
-    // compileOnly = SDK Wear présent sur la montre, pas besoin de l'embarquer
     compileOnly(libs.com.google.android.wearable)
     implementation(libs.com.google.android.wearable.support)
 
-    // ── Compose BOM + UI ─────────────────────────────────────────────
+    // ── Compose BOM ──────────────────────────────────────────────────
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.compose.material)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel)
 
-    // Wear Compose — absent du toml, versions en dur
-    implementation("androidx.wear.compose:compose-material:1.4.1")
-    implementation("androidx.wear.compose:compose-foundation:1.4.1")
-    implementation("androidx.wear.compose:compose-navigation:1.4.1")
+    // ── Wear Compose (ajoutés dans libs.versions.toml) ───────────────
+    implementation(libs.androidx.wear.compose.material)
+    implementation(libs.androidx.wear.compose.foundation)
+    implementation(libs.androidx.wear.compose.navigation)
 
     // ── Coroutines ───────────────────────────────────────────────────
     implementation(platform(libs.kotlinx.coroutines.bom))
     implementation(libs.kotlinx.coroutines.android)
 
-    // ── Room DB ──────────────────────────────────────────────────────
+    // ── Room ─────────────────────────────────────────────────────────
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room)
     ksp(libs.androidx.room.compiler)
@@ -75,7 +81,7 @@ dependencies {
     // ── DataStore ────────────────────────────────────────────────────
     implementation(libs.androidx.datastore.preferences)
 
-    // ── Modules AAPS du projet parent ────────────────────────────────
+    // ── Modules AAPS ─────────────────────────────────────────────────
     implementation(project(":core:interfaces"))
     implementation(project(":core:data"))
     implementation(project(":core:keys"))
