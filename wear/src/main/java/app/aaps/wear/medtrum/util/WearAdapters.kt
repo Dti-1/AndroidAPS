@@ -1,9 +1,10 @@
 package app.aaps.wear.medtrum.util
+import app.aaps.core.interfaces.pump.PumpSync
 
 import android.content.Context
 import android.content.SharedPreferences
 import app.aaps.core.interfaces.pump.TemporaryBasalStorage
-import app.aaps.core.interfaces.pump.TemporaryBasalStorage.PumpTemporaryBasal
+import app.aaps.core.interfaces.pump.TemporaryBasalStorage.PumpSync.PumpState.TemporaryBasal
 import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.core.interfaces.utils.DateUtil
 import app.aaps.core.keys.interfaces.Preferences
@@ -91,7 +92,7 @@ class WearDateUtil : DateUtil {
 // ─────────────────────────────────────────────────────────────────────────
 class WearResourceHelper(private val context: Context) : ResourceHelper {
 
-    override fun gs(id: Int): String =
+    override fun gs(id: Int, vararg args: Any?): String =
         try { context.getString(id) } catch (_: Exception) { "[$id]" }
 
     override fun gs(id: Int, vararg args: Any): String =
@@ -113,10 +114,10 @@ class WearResourceHelper(private val context: Context) : ResourceHelper {
 // ─────────────────────────────────────────────────────────────────────────
 class WearTemporaryBasalStorage : TemporaryBasalStorage {
 
-    // Map timestamp → PumpTemporaryBasal (en mémoire, thread-safe)
-    private val storage = ConcurrentHashMap<Long, PumpTemporaryBasal>()
+    // Map timestamp → PumpSync.PumpState.TemporaryBasal (en mémoire, thread-safe)
+    private val storage = ConcurrentHashMap<Long, PumpSync.PumpState.TemporaryBasal>()
 
-    override fun add(tbr: PumpTemporaryBasal) {
+    override fun add(tbr: PumpSync.PumpState.TemporaryBasal) {
         storage[tbr.timestamp] = tbr
         // Nettoyer les entrées de plus de 2h (ne peuvent plus être reconciliées)
         val cutoff = System.currentTimeMillis() - 2 * 60 * 60 * 1000L
@@ -127,7 +128,7 @@ class WearTemporaryBasalStorage : TemporaryBasalStorage {
      * Trouve un TBR correspondant au timestamp et au débit donnés.
      * Tolérance : ±1 minute sur le timestamp, ±0.01 U/h sur le débit.
      */
-    override fun findTemporaryBasal(timestamp: Long, rate: Double): PumpTemporaryBasal? {
+    override fun findTemporaryBasal(timestamp: Long, rate: Double): PumpSync.PumpState.TemporaryBasal? {
         val toleranceMs   = 60_000L   // ±1 minute
         val toleranceRate = 0.01      // ±0.01 U/h
 
@@ -140,5 +141,5 @@ class WearTemporaryBasalStorage : TemporaryBasalStorage {
         }
     }
 
-    override fun reset() = storage.clear()
+    fun reset() = storage.clear()
 }
