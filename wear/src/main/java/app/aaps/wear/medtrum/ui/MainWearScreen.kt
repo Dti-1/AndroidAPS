@@ -367,7 +367,7 @@ private fun PumpStateBadge(state: MedtrumPumpState) {
         MedtrumPumpState.ACTIVE          -> "Active"    to ColorScheme.normal
         MedtrumPumpState.SUSPENDED       -> "Suspendu"  to ColorScheme.warning
         MedtrumPumpState.PAUSED          -> "Pause"     to ColorScheme.warning
-        MedtrumPumpState.LOWBG_SUSPENDED -> "Suspendu"  to ColorScheme.danger
+        MedtrumPumpState.LOW_BG_SUSPENDED -> "Suspendu"  to ColorScheme.danger
         MedtrumPumpState.NONE            -> "Inactif"   to ColorScheme.muted
         else                             -> state.name  to ColorScheme.muted
     }

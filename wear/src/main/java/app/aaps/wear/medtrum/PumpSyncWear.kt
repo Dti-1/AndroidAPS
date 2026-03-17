@@ -10,22 +10,16 @@ import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.pump.PumpSync.TemporaryBasalType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.util.concurrent.atomic.AtomicLong
 
-/**
- * PumpSyncWear
- *
- * Implémentation légère de PumpSync pour Wear OS.
- * Stocke l'état en mémoire — pas de Room DB pour éviter les dépendances.
- * Seules les méthodes utilisées par MedtrumPump sont implémentées fonctionnellement.
- * Toutes les autres retournent false/Unit (non utilisées par le driver Medtrum).
- */
 class PumpSyncWear(private val context: Context) : PumpSync {
 
-    // État en mémoire — partagé avec l'UI via StateFlow
+    // Générateur d'ID local (remplace la DB Room)
+    private val idGenerator = AtomicLong(System.currentTimeMillis())
+    private fun nextId(): Long = idGenerator.incrementAndGet()
+
     private val _temporaryBasal = MutableStateFlow<PumpSync.PumpState.TemporaryBasal?>(null)
     val temporaryBasalFlow: StateFlow<PumpSync.PumpState.TemporaryBasal?> = _temporaryBasal
-
-    private val _lastBolus = MutableStateFlow<PumpSync.PumpState.Bolus?>(null)
 
     // ── Méthodes utilisées par MedtrumPump ────────────────────────────────
 
@@ -38,7 +32,7 @@ class PumpSyncWear(private val context: Context) : PumpSync {
     override fun expectedPumpState(): PumpSync.PumpState = PumpSync.PumpState(
         temporaryBasal = _temporaryBasal.value,
         extendedBolus  = null,
-        bolus          = _lastBolus.value,
+        bolus          = null,   // Bolus n'a que timestamp+amount, pas d'utilité ici
         profile        = null,
         serialNumber   = ""
     )
@@ -53,6 +47,7 @@ class PumpSyncWear(private val context: Context) : PumpSync {
             rate       = rate,
             isAbsolute = isAbsolute,
             type       = type ?: TemporaryBasalType.NORMAL,
+            id         = nextId(),          // id obligatoire dans ce fork
             pumpId     = pumpId,
             pumpType   = pumpType,
             pumpSerial = pumpSerial
@@ -76,25 +71,16 @@ class PumpSyncWear(private val context: Context) : PumpSync {
     }
 
     override fun syncBolusWithPumpId(
-        timestamp: Long, amount: Double, type: BS.Type?, pumpId: Long,
-        pumpType: PumpType, pumpSerial: String
-    ): Boolean {
-        _lastBolus.value = PumpSync.PumpState.Bolus(
-            timestamp  = timestamp,
-            amount     = amount,
-            pumpId     = pumpId,
-            pumpType   = pumpType,
-            pumpSerial = pumpSerial
-        )
-        return true
-    }
+        timestamp: Long, amount: Double, type: BS.Type?,
+        pumpId: Long, pumpType: PumpType, pumpSerial: String
+    ): Boolean = true  // Bolus(timestamp, amount) — pas de pumpId dans ce fork
 
     override fun insertTherapyEventIfNewWithTimestamp(
         timestamp: Long, type: TE.Type, note: String?,
         pumpId: Long?, pumpType: PumpType, pumpSerial: String
-    ): Boolean = true  // Enregistrement minimal — pas de DB sur Wear OS
+    ): Boolean = true
 
-    // ── Méthodes NON utilisées par MedtrumPump — stubs ────────────────────
+    // ── Stubs non utilisés par MedtrumPump ───────────────────────────────
 
     override fun addBolusWithTempId(timestamp: Long, amount: Double, temporaryId: Long, type: BS.Type, pumpType: PumpType, pumpSerial: String): Boolean = false
     override fun syncBolusWithTempId(timestamp: Long, amount: Double, temporaryId: Long, type: BS.Type?, pumpId: Long?, pumpType: PumpType, pumpSerial: String): Boolean = false
