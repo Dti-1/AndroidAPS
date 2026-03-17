@@ -1,8 +1,8 @@
 package app.aaps.wear.medtrum.util
 
 import android.content.Context
+import app.aaps.core.interfaces.pump.PumpSync
 import app.aaps.core.interfaces.pump.TemporaryBasalStorage
-import app.aaps.core.interfaces.pump.TemporaryBasalStorage.PumpTemporaryBasal
 import app.aaps.core.keys.interfaces.BooleanComposedNonPreferenceKey
 import app.aaps.core.keys.interfaces.BooleanNonPreferenceKey
 import app.aaps.core.keys.interfaces.BooleanPreferenceKey
@@ -96,21 +96,22 @@ class WearPreferences(private val context: Context) : Preferences {
 }
 
 // ── WearTemporaryBasalStorage ─────────────────────────────────────────────
+// Utilise PumpSync.PumpState.TemporaryBasal — la vraie signature de l'interface
 
 class WearTemporaryBasalStorage : TemporaryBasalStorage {
-    private val storage = ConcurrentHashMap<Long, PumpTemporaryBasal>()
 
-    override fun add(temporaryBasal: PumpTemporaryBasal) {
+    private val storage = ConcurrentHashMap<Long, PumpSync.PumpState.TemporaryBasal>()
+
+    override fun add(temporaryBasal: PumpSync.PumpState.TemporaryBasal) {
         storage[temporaryBasal.timestamp] = temporaryBasal
+        // Nettoyer les entrées de plus de 2h
         val cutoff = System.currentTimeMillis() - 2 * 60 * 60 * 1000L
-        storage.keys.filter { it < cutoff }.forEach { storage.remove(it) }
+        storage.entries.removeIf { it.key < cutoff }
     }
 
-    override fun findTemporaryBasal(timestamp: Long, rate: Double): PumpTemporaryBasal? =
-        storage.values.firstOrNull {
-            kotlin.math.abs(it.timestamp - timestamp) < 60_000L &&
-            kotlin.math.abs(it.rate - rate) < 0.01
+    override fun findTemporaryBasal(time: Long, rate: Double): PumpSync.PumpState.TemporaryBasal? =
+        storage.values.firstOrNull { tbr ->
+            kotlin.math.abs(tbr.timestamp - time) < 60_000L &&
+            kotlin.math.abs(tbr.rate - rate) < 0.01
         }?.also { storage.remove(it.timestamp) }
-
-    override fun reset() = storage.clear()
 }

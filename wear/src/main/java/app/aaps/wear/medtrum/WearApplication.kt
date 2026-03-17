@@ -3,11 +3,14 @@ package app.aaps.wear.medtrum
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
+import app.aaps.core.interfaces.logging.AAPSLogger
+import app.aaps.core.interfaces.logging.LTag
+import app.aaps.core.interfaces.resources.ResourceHelper
 import app.aaps.pump.medtrum.MedtrumPump
 import app.aaps.wear.medtrum.util.WearPreferences
 import app.aaps.wear.medtrum.util.WearResourceHelper
-import app.aaps.wear.medtrum.util.WearTimeUtil
 import app.aaps.wear.medtrum.util.WearTemporaryBasalStorage
+import app.aaps.wear.medtrum.util.WearTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,18 +22,18 @@ class WearApplication : Application() {
     companion object {
         lateinit var instance: WearApplication
             private set
-        private const val PREFS_NAME         = "aaps_wear_prefs"
-        const val KEY_PUMP_SERIAL            = "pump_serial"
-        const val KEY_ONBOARDING_DONE        = "onboarding_done"
+        private const val PREFS_NAME      = "aaps_wear_prefs"
+        const val KEY_PUMP_SERIAL         = "pump_serial"
+        const val KEY_ONBOARDING_DONE     = "onboarding_done"
     }
 
-    lateinit var sharedPrefs: SharedPreferences        private set
-    lateinit var wearPreferences: WearPreferences      private set
-    lateinit var resourceHelper: WearResourceHelper    private set
-    lateinit var timeUtil: WearTimeUtil                private set
-    lateinit var pumpSync: PumpSyncWear                private set
+    lateinit var sharedPrefs: SharedPreferences         private set
+    lateinit var wearPreferences: WearPreferences       private set
+    lateinit var resourceHelper: WearResourceHelper     private set
+    lateinit var timeUtil: WearTimeUtil                 private set
+    lateinit var pumpSync: PumpSyncWear                 private set
     lateinit var temporaryBasalStorage: WearTemporaryBasalStorage private set
-    lateinit var medtrumPump: MedtrumPump              private set
+    lateinit var medtrumPump: MedtrumPump               private set
 
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -76,7 +79,7 @@ class WearApplication : Application() {
         MedtrumPacketDispatcher.lastAlarm
             .onEach { alarm ->
                 if (alarm != app.aaps.pump.medtrum.comm.enums.AlarmState.NONE) {
-                    // TODO: vibration/notification alarme
+                    // TODO: vibration + notification alarme Wear OS
                 }
             }
             .launchIn(appScope)
@@ -88,20 +91,38 @@ class WearApplication : Application() {
     }
 }
 
-class WearAAPSLogger : app.aaps.core.interfaces.logging.AAPSLogger {
-    override fun debug(tag: app.aaps.core.interfaces.logging.LTag, message: String) = android.util.Log.d(tag.tag, message)
-    override fun info(tag: app.aaps.core.interfaces.logging.LTag, message: String)  = android.util.Log.i(tag.tag, message)
-    override fun warn(tag: app.aaps.core.interfaces.logging.LTag, message: String)  = android.util.Log.w(tag.tag, message)
-    override fun error(tag: app.aaps.core.interfaces.logging.LTag, message: String) = android.util.Log.e(tag.tag, message)
-    override fun error(tag: app.aaps.core.interfaces.logging.LTag, message: String, throwable: Throwable) = android.util.Log.e(tag.tag, message, throwable)
+// ── WearAAPSLogger — toutes les méthodes de l'interface ──────────────────
+
+class WearAAPSLogger : AAPSLogger {
+    override fun debug(message: String)                                                              = android.util.Log.d("AAPS-Wear", message)
+    override fun debug(enable: Boolean, tag: LTag, message: String)                                  { if (enable) android.util.Log.d(tag.tag, message) }
+    override fun debug(tag: LTag, message: String)                                                   = android.util.Log.d(tag.tag, message)
+    override fun debug(tag: LTag, accessor: () -> String)                                            = android.util.Log.d(tag.tag, accessor())
+    override fun debug(tag: LTag, format: String, vararg arguments: Any?)                            = android.util.Log.d(tag.tag, format.format(*arguments))
+    override fun debug(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String) = android.util.Log.d(tag.tag, "[$className.$methodName:$lineNumber] $message")
+    override fun info(tag: LTag, message: String)                                                    = android.util.Log.i(tag.tag, message)
+    override fun info(tag: LTag, format: String, vararg arguments: Any?)                             = android.util.Log.i(tag.tag, format.format(*arguments))
+    override fun info(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String)  = android.util.Log.i(tag.tag, "[$className.$methodName:$lineNumber] $message")
+    override fun warn(tag: LTag, message: String)                                                    = android.util.Log.w(tag.tag, message)
+    override fun warn(tag: LTag, format: String, vararg arguments: Any?)                             = android.util.Log.w(tag.tag, format.format(*arguments))
+    override fun warn(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String)  = android.util.Log.w(tag.tag, "[$className.$methodName:$lineNumber] $message")
+    override fun error(tag: LTag, message: String)                                                   = android.util.Log.e(tag.tag, message)
+    override fun error(tag: LTag, message: String, throwable: Throwable)                             = android.util.Log.e(tag.tag, message, throwable)
+    override fun error(tag: LTag, format: String, vararg arguments: Any?)                            = android.util.Log.e(tag.tag, format.format(*arguments))
+    override fun error(message: String)                                                              = android.util.Log.e("AAPS-Wear", message)
+    override fun error(message: String, throwable: Throwable)                                       = android.util.Log.e("AAPS-Wear", message, throwable)
+    override fun error(format: String, vararg arguments: Any?)                                       = android.util.Log.e("AAPS-Wear", format.format(*arguments))
+    override fun error(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String) = android.util.Log.e(tag.tag, "[$className.$methodName:$lineNumber] $message")
 }
 
-/** DateUtil minimal — uniquement now() et dateAndTimeString() utilisés par MedtrumPump */
+// ── WearDateUtilSimple — seules now() et dateAndTimeString() sont utilisées
+// par MedtrumPump. Toutes les autres méthodes retournent des valeurs vides. ──
+
 class WearDateUtilSimple : app.aaps.core.interfaces.utils.DateUtil {
     override fun now(): Long = System.currentTimeMillis()
+    override fun nowWithoutMilliseconds(): Long = System.currentTimeMillis() / 1000 * 1000
     override fun dateAndTimeString(mills: Long): String =
         java.text.SimpleDateFormat("dd/MM HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(mills))
-    // Toutes les autres méthodes — non utilisées par MedtrumPump, implémentations vides
     override fun fromISODateString(isoDateString: String): Long = 0L
     override fun toISOString(date: Long): String = ""
     override fun toISOAsUTC(timestamp: Long): String = ""
@@ -110,7 +131,7 @@ class WearDateUtilSimple : app.aaps.core.interfaces.utils.DateUtil {
     override fun secondsOfTheDayToMilliseconds(seconds: Int): Long = seconds * 1000L
     override fun toSeconds(hhColonMm: String): Int = 0
     override fun dateString(mills: Long): String = ""
-    override fun dateStringRelative(mills: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
+    override fun dateStringRelative(mills: Long, rh: ResourceHelper): String = ""
     override fun dateStringShort(mills: Long): String = ""
     override fun timeString(): String = ""
     override fun timeString(mills: Long): String = ""
@@ -134,18 +155,17 @@ class WearDateUtilSimple : app.aaps.core.interfaces.utils.DateUtil {
     override fun timeRangeString(start: Long, end: Long): String = ""
     override fun dateAndTimeStringNullable(mills: Long?): String? = null
     override fun dateAndTimeAndSecondsString(mills: Long): String = ""
-    override fun minAgo(rh: app.aaps.core.interfaces.resources.ResourceHelper, time: Long?): String = ""
-    override fun minOrSecAgo(rh: app.aaps.core.interfaces.resources.ResourceHelper, time: Long?): String = ""
+    override fun minAgo(rh: ResourceHelper, time: Long?): String = ""
+    override fun minOrSecAgo(rh: ResourceHelper, time: Long?): String = ""
     override fun minAgoShort(time: Long?): String = ""
-    override fun minAgoLong(rh: app.aaps.core.interfaces.resources.ResourceHelper, time: Long?): String = ""
-    override fun hourAgo(time: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
-    override fun dayAgo(time: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper, round: Boolean): String = ""
+    override fun minAgoLong(rh: ResourceHelper, time: Long?): String = ""
+    override fun hourAgo(time: Long, rh: ResourceHelper): String = ""
+    override fun dayAgo(time: Long, rh: ResourceHelper, round: Boolean): String = ""
     override fun beginOfDay(mills: Long): Long = 0L
     override fun timeStringFromSeconds(seconds: Int): String = ""
-    override fun timeFrameString(timeInMillis: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
-    override fun sinceString(timestamp: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
-    override fun untilString(timestamp: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
-    override fun nowWithoutMilliseconds(): Long = System.currentTimeMillis() / 1000 * 1000
+    override fun timeFrameString(timeInMillis: Long, rh: ResourceHelper): String = ""
+    override fun sinceString(timestamp: Long, rh: ResourceHelper): String = ""
+    override fun untilString(timestamp: Long, rh: ResourceHelper): String = ""
     override fun isOlderThan(date: Long, minutes: Long): Boolean = System.currentTimeMillis() - date > minutes * 60000
     override fun getTimeZoneOffsetMs(): Long = 0L
     override fun getTimeZoneOffsetMsWithDST(): Long = 0L
@@ -154,10 +174,10 @@ class WearDateUtilSimple : app.aaps.core.interfaces.utils.DateUtil {
     override fun isAfterNoon(): Boolean = false
     override fun isSameDayGroup(timestamp1: Long, timestamp2: Long): Boolean = false
     override fun computeDiff(date1: Long, date2: Long): Map<java.util.concurrent.TimeUnit, Long> = emptyMap()
-    override fun age(milliseconds: Long, useShortText: Boolean, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
-    override fun timeAgoFullString(milliseconds: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
-    override fun niceTimeScalar(time: Long, rh: app.aaps.core.interfaces.resources.ResourceHelper): String = ""
-    override fun qs(x: Double, numDigits: Int): String = "%.${numDigits}f".format(x)
+    override fun age(milliseconds: Long, useShortText: Boolean, rh: ResourceHelper): String = ""
+    override fun timeAgoFullString(milliseconds: Long, rh: ResourceHelper): String = ""
+    override fun niceTimeScalar(time: Long, rh: ResourceHelper): String = ""
+    override fun qs(x: Double, numDigits: Int): String = "%.${if (numDigits < 0) 2 else numDigits}f".format(x)
     override fun formatHHMM(timeAsSeconds: Int): String = ""
     override fun timeZoneByOffset(offsetInMilliseconds: Long): String = "UTC"
     override fun timeStampToUtcDateMillis(timestamp: Long): Long = 0L
