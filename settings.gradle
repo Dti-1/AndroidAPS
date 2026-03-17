@@ -47,3 +47,4 @@ include ':shared:impl'
 include ':shared:tests'
 include ':ui'
 include ':workflow'
+include(":wear-medtrum")
