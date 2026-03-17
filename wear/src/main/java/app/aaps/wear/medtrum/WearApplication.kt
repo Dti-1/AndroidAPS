@@ -3,6 +3,7 @@ package app.aaps.wear.medtrum
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import app.aaps.core.interfaces.logging.AAPSLogger
 import app.aaps.core.interfaces.logging.LTag
 import app.aaps.core.interfaces.resources.ResourceHelper
@@ -22,18 +23,18 @@ class WearApplication : Application() {
     companion object {
         lateinit var instance: WearApplication
             private set
-        private const val PREFS_NAME      = "aaps_wear_prefs"
-        const val KEY_PUMP_SERIAL         = "pump_serial"
-        const val KEY_ONBOARDING_DONE     = "onboarding_done"
+        private const val PREFS_NAME  = "aaps_wear_prefs"
+        const val KEY_PUMP_SERIAL     = "pump_serial"
+        const val KEY_ONBOARDING_DONE = "onboarding_done"
     }
 
-    lateinit var sharedPrefs: SharedPreferences         private set
-    lateinit var wearPreferences: WearPreferences       private set
-    lateinit var resourceHelper: WearResourceHelper     private set
-    lateinit var timeUtil: WearTimeUtil                 private set
-    lateinit var pumpSync: PumpSyncWear                 private set
+    lateinit var sharedPrefs: SharedPreferences              private set
+    lateinit var wearPreferences: WearPreferences            private set
+    lateinit var resourceHelper: WearResourceHelper          private set
+    lateinit var timeUtil: WearTimeUtil                      private set
+    lateinit var pumpSync: PumpSyncWear                      private set
     lateinit var temporaryBasalStorage: WearTemporaryBasalStorage private set
-    lateinit var medtrumPump: MedtrumPump               private set
+    lateinit var medtrumPump: MedtrumPump                    private set
 
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -53,7 +54,6 @@ class WearApplication : Application() {
         timeUtil              = WearTimeUtil()
         pumpSync              = PumpSyncWear(this)
         temporaryBasalStorage = WearTemporaryBasalStorage()
-
         medtrumPump = MedtrumPump(
             aapsLogger            = WearAAPSLogger(),
             rh                    = resourceHelper,
@@ -79,7 +79,7 @@ class WearApplication : Application() {
         MedtrumPacketDispatcher.lastAlarm
             .onEach { alarm ->
                 if (alarm != app.aaps.pump.medtrum.comm.enums.AlarmState.NONE) {
-                    // TODO: vibration + notification alarme Wear OS
+                    // TODO: vibration alarme
                 }
             }
             .launchIn(appScope)
@@ -91,32 +91,65 @@ class WearApplication : Application() {
     }
 }
 
-// ── WearAAPSLogger — toutes les méthodes de l'interface ──────────────────
-
 class WearAAPSLogger : AAPSLogger {
-    override fun debug(message: String)                                                              = android.util.Log.d("AAPS-Wear", message)
-    override fun debug(enable: Boolean, tag: LTag, message: String)                                  { if (enable) android.util.Log.d(tag.tag, message) }
-    override fun debug(tag: LTag, message: String)                                                   = android.util.Log.d(tag.tag, message)
-    override fun debug(tag: LTag, accessor: () -> String)                                            = android.util.Log.d(tag.tag, accessor())
-    override fun debug(tag: LTag, format: String, vararg arguments: Any?)                            = android.util.Log.d(tag.tag, format.format(*arguments))
-    override fun debug(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String) = android.util.Log.d(tag.tag, "[$className.$methodName:$lineNumber] $message")
-    override fun info(tag: LTag, message: String)                                                    = android.util.Log.i(tag.tag, message)
-    override fun info(tag: LTag, format: String, vararg arguments: Any?)                             = android.util.Log.i(tag.tag, format.format(*arguments))
-    override fun info(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String)  = android.util.Log.i(tag.tag, "[$className.$methodName:$lineNumber] $message")
-    override fun warn(tag: LTag, message: String)                                                    = android.util.Log.w(tag.tag, message)
-    override fun warn(tag: LTag, format: String, vararg arguments: Any?)                             = android.util.Log.w(tag.tag, format.format(*arguments))
-    override fun warn(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String)  = android.util.Log.w(tag.tag, "[$className.$methodName:$lineNumber] $message")
-    override fun error(tag: LTag, message: String)                                                   = android.util.Log.e(tag.tag, message)
-    override fun error(tag: LTag, message: String, throwable: Throwable)                             = android.util.Log.e(tag.tag, message, throwable)
-    override fun error(tag: LTag, format: String, vararg arguments: Any?)                            = android.util.Log.e(tag.tag, format.format(*arguments))
-    override fun error(message: String)                                                              = android.util.Log.e("AAPS-Wear", message)
-    override fun error(message: String, throwable: Throwable)                                       = android.util.Log.e("AAPS-Wear", message, throwable)
-    override fun error(format: String, vararg arguments: Any?)                                       = android.util.Log.e("AAPS-Wear", format.format(*arguments))
-    override fun error(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String) = android.util.Log.e(tag.tag, "[$className.$methodName:$lineNumber] $message")
+    override fun debug(message: String) {
+        Log.d("AAPS-Wear", message)
+    }
+    override fun debug(enable: Boolean, tag: LTag, message: String) {
+        if (enable) Log.d(tag.tag, message)
+    }
+    override fun debug(tag: LTag, message: String) {
+        Log.d(tag.tag, message)
+    }
+    override fun debug(tag: LTag, accessor: () -> String) {
+        Log.d(tag.tag, accessor())
+    }
+    override fun debug(tag: LTag, format: String, vararg arguments: Any?) {
+        Log.d(tag.tag, format.format(*arguments))
+    }
+    override fun debug(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String) {
+        Log.d(tag.tag, "[$className.$methodName:$lineNumber] $message")
+    }
+    override fun info(tag: LTag, message: String) {
+        Log.i(tag.tag, message)
+    }
+    override fun info(tag: LTag, format: String, vararg arguments: Any?) {
+        Log.i(tag.tag, format.format(*arguments))
+    }
+    override fun info(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String) {
+        Log.i(tag.tag, "[$className.$methodName:$lineNumber] $message")
+    }
+    override fun warn(tag: LTag, message: String) {
+        Log.w(tag.tag, message)
+    }
+    override fun warn(tag: LTag, format: String, vararg arguments: Any?) {
+        Log.w(tag.tag, format.format(*arguments))
+    }
+    override fun warn(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String) {
+        Log.w(tag.tag, "[$className.$methodName:$lineNumber] $message")
+    }
+    override fun error(tag: LTag, message: String) {
+        Log.e(tag.tag, message)
+    }
+    override fun error(tag: LTag, message: String, throwable: Throwable) {
+        Log.e(tag.tag, message, throwable)
+    }
+    override fun error(tag: LTag, format: String, vararg arguments: Any?) {
+        Log.e(tag.tag, format.format(*arguments))
+    }
+    override fun error(message: String) {
+        Log.e("AAPS-Wear", message)
+    }
+    override fun error(message: String, throwable: Throwable) {
+        Log.e("AAPS-Wear", message, throwable)
+    }
+    override fun error(format: String, vararg arguments: Any?) {
+        Log.e("AAPS-Wear", format.format(*arguments))
+    }
+    override fun error(className: String, methodName: String, lineNumber: Int, tag: LTag, message: String) {
+        Log.e(tag.tag, "[$className.$methodName:$lineNumber] $message")
+    }
 }
-
-// ── WearDateUtilSimple — seules now() et dateAndTimeString() sont utilisées
-// par MedtrumPump. Toutes les autres méthodes retournent des valeurs vides. ──
 
 class WearDateUtilSimple : app.aaps.core.interfaces.utils.DateUtil {
     override fun now(): Long = System.currentTimeMillis()
