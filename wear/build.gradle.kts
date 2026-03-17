@@ -3,6 +3,7 @@ import java.util.Date
 
 plugins {
     alias(libs.plugins.ksp)
+    alias(libs.plugins.compose.compiler)
     id("com.android.application")
     id("kotlin-android")
     kotlin("plugin.serialization")
@@ -93,6 +94,7 @@ android {
     }
     buildFeatures {
         buildConfig = true
+        compose = true  
     }
 }
 
@@ -108,6 +110,8 @@ dependencies {
     implementation(project(":core:keys"))
     implementation(project(":core:ui"))
     implementation(project(":core:data"))
+
+implementation(project(":pump:medtrum")) 
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core)
@@ -129,6 +133,18 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.serialization.protobuf)
+
+
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel)
+    implementation(libs.androidx.wear.compose.material)
+    implementation(libs.androidx.wear.compose.foundation)
+    implementation(libs.androidx.wear.compose.navigation)
+
 
     implementation(libs.com.google.android.gms.playservices.wearable)
     implementation(files("${rootDir}/wear/libs/hellocharts-library-1.5.8.aar"))
