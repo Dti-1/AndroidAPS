@@ -1,145 +1,116 @@
 package app.aaps.wear.medtrum.util
-import app.aaps.core.interfaces.pump.PumpSync
 
 import android.content.Context
-import android.content.SharedPreferences
 import app.aaps.core.interfaces.pump.TemporaryBasalStorage
-import app.aaps.core.interfaces.pump.TemporaryBasalStorage.PumpSync.PumpState.TemporaryBasal
-import app.aaps.core.interfaces.resources.ResourceHelper
-import app.aaps.core.interfaces.utils.DateUtil
+import app.aaps.core.interfaces.pump.TemporaryBasalStorage.PumpTemporaryBasal
+import app.aaps.core.keys.interfaces.BooleanComposedNonPreferenceKey
+import app.aaps.core.keys.interfaces.BooleanNonPreferenceKey
+import app.aaps.core.keys.interfaces.BooleanPreferenceKey
+import app.aaps.core.keys.interfaces.ComposedKey
+import app.aaps.core.keys.interfaces.DoubleComposedNonPreferenceKey
+import app.aaps.core.keys.interfaces.DoubleNonPreferenceKey
+import app.aaps.core.keys.interfaces.DoublePreferenceKey
+import app.aaps.core.keys.interfaces.IntComposedNonPreferenceKey
+import app.aaps.core.keys.interfaces.IntNonPreferenceKey
+import app.aaps.core.keys.interfaces.IntPreferenceKey
+import app.aaps.core.keys.interfaces.LongComposedNonPreferenceKey
+import app.aaps.core.keys.interfaces.LongNonPreferenceKey
+import app.aaps.core.keys.interfaces.LongPreferenceKey
+import app.aaps.core.keys.interfaces.NonPreferenceKey
 import app.aaps.core.keys.interfaces.Preferences
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import app.aaps.core.keys.interfaces.PreferenceKey
+import app.aaps.core.keys.interfaces.StringComposedNonPreferenceKey
+import app.aaps.core.keys.interfaces.StringNonPreferenceKey
+import app.aaps.core.keys.interfaces.StringPreferenceKey
+import app.aaps.core.keys.interfaces.UnitDoublePreferenceKey
 import java.util.concurrent.ConcurrentHashMap
 
-// ─────────────────────────────────────────────────────────────────────────
-// WearPreferences
-//
-// Adaptateur léger de l'interface Preferences d'AAPS.
-// MedtrumPump utilise cette interface pour lire/écrire ses settings.
-// On stocke tout dans SharedPreferences standard.
-// ─────────────────────────────────────────────────────────────────────────
-class WearPreferences(private val prefs: SharedPreferences) : Preferences {
+// ── WearPreferences ───────────────────────────────────────────────────────
 
-    override fun <T : Any> get(key: app.aaps.core.keys.interfaces.Key<T>): T {
-        @Suppress("UNCHECKED_CAST")
-        return when (key.defaultValue) {
-            is Long    -> (prefs.getLong(key.key, key.defaultValue as Long)    as T)
-            is Int     -> (prefs.getInt(key.key, key.defaultValue as Int)      as T)
-            is Double  -> (prefs.getFloat(key.key, (key.defaultValue as Double).toFloat()).toDouble() as T)
-            is Boolean -> (prefs.getBoolean(key.key, key.defaultValue as Boolean) as T)
-            is String  -> (prefs.getString(key.key, key.defaultValue as String) ?: "" as T)
-            is Byte    -> (prefs.getInt(key.key, (key.defaultValue as Byte).toInt()).toByte() as T)
-            else       -> key.defaultValue
-        }
-    }
+class WearPreferences(private val context: Context) : Preferences {
 
-    override fun <T : Any> put(key: app.aaps.core.keys.interfaces.Key<T>, value: T) {
-        prefs.edit().apply {
-            when (value) {
-                is Long    -> putLong(key.key, value)
-                is Int     -> putInt(key.key, value)
-                is Double  -> putFloat(key.key, value.toFloat())
-                is Boolean -> putBoolean(key.key, value)
-                is String  -> putString(key.key, value)
-                is Byte    -> putInt(key.key, value.toInt())
-            }
-        }.apply()
-    }
+    private val prefs = context.getSharedPreferences("aaps_wear_prefs", Context.MODE_PRIVATE)
 
-    override fun <T : Any> isSet(key: app.aaps.core.keys.interfaces.Key<T>): Boolean =
-        prefs.contains(key.key)
+    override val simpleMode: Boolean get() = false
+    override val apsMode: Boolean get() = true
+    override val nsclientMode: Boolean get() = false
+    override val pumpControlMode: Boolean get() = false
 
-    override fun <T : Any> remove(key: app.aaps.core.keys.interfaces.Key<T>) {
-        prefs.edit().remove(key.key).apply()
-    }
+    override fun get(key: BooleanNonPreferenceKey): Boolean = prefs.getBoolean(key.key, key.defaultValue)
+    override fun getIfExists(key: BooleanNonPreferenceKey): Boolean? = if (prefs.contains(key.key)) prefs.getBoolean(key.key, key.defaultValue) else null
+    override fun put(key: BooleanNonPreferenceKey, value: Boolean) = prefs.edit().putBoolean(key.key, value).apply()
+    override fun get(key: BooleanPreferenceKey): Boolean = prefs.getBoolean(key.key, key.defaultValue)
+    override fun get(key: BooleanComposedNonPreferenceKey, vararg arguments: Any): Boolean = prefs.getBoolean(key.key.format(*arguments), key.defaultValue)
+    override fun get(key: BooleanComposedNonPreferenceKey, vararg arguments: Any, defaultValue: Boolean): Boolean = prefs.getBoolean(key.key.format(*arguments), defaultValue)
+    override fun getIfExists(key: BooleanComposedNonPreferenceKey, vararg arguments: Any): Boolean? { val k = key.key.format(*arguments); return if (prefs.contains(k)) prefs.getBoolean(k, key.defaultValue) else null }
+    override fun put(key: BooleanComposedNonPreferenceKey, vararg arguments: Any, value: Boolean) = prefs.edit().putBoolean(key.key.format(*arguments), value).apply()
+
+    override fun get(key: StringNonPreferenceKey): String = prefs.getString(key.key, key.defaultValue) ?: key.defaultValue
+    override fun getIfExists(key: StringNonPreferenceKey): String? = prefs.getString(key.key, null)
+    override fun put(key: StringNonPreferenceKey, value: String) = prefs.edit().putString(key.key, value).apply()
+    override fun get(key: StringPreferenceKey): String = prefs.getString(key.key, key.defaultValue) ?: key.defaultValue
+    override fun get(key: StringComposedNonPreferenceKey, vararg arguments: Any): String = prefs.getString(key.key.format(*arguments), key.defaultValue) ?: key.defaultValue
+    override fun getIfExists(key: StringComposedNonPreferenceKey, vararg arguments: Any): String? = prefs.getString(key.key.format(*arguments), null)
+    override fun put(key: StringComposedNonPreferenceKey, vararg arguments: Any, value: String) = prefs.edit().putString(key.key.format(*arguments), value).apply()
+
+    override fun get(key: DoubleNonPreferenceKey): Double = prefs.getFloat(key.key, key.defaultValue.toFloat()).toDouble()
+    override fun get(key: DoublePreferenceKey): Double = prefs.getFloat(key.key, key.defaultValue.toFloat()).toDouble()
+    override fun getIfExists(key: DoublePreferenceKey): Double? = if (prefs.contains(key.key)) prefs.getFloat(key.key, 0f).toDouble() else null
+    override fun put(key: DoubleNonPreferenceKey, value: Double) = prefs.edit().putFloat(key.key, value.toFloat()).apply()
+    override fun get(key: DoubleComposedNonPreferenceKey, vararg arguments: Any): Double = prefs.getFloat(key.key.format(*arguments), key.defaultValue.toFloat()).toDouble()
+    override fun getIfExists(key: DoubleComposedNonPreferenceKey, vararg arguments: Any): Double? { val k = key.key.format(*arguments); return if (prefs.contains(k)) prefs.getFloat(k, 0f).toDouble() else null }
+    override fun put(key: DoubleComposedNonPreferenceKey, vararg arguments: Any, value: Double) = prefs.edit().putFloat(key.key.format(*arguments), value.toFloat()).apply()
+
+    override fun get(key: UnitDoublePreferenceKey): Double = prefs.getFloat(key.key, key.defaultValue.toFloat()).toDouble()
+    override fun getIfExists(key: UnitDoublePreferenceKey): Double? = if (prefs.contains(key.key)) prefs.getFloat(key.key, 0f).toDouble() else null
+    override fun put(key: UnitDoublePreferenceKey, value: Double) = prefs.edit().putFloat(key.key, value.toFloat()).apply()
+
+    override fun get(key: IntNonPreferenceKey): Int = prefs.getInt(key.key, key.defaultValue)
+    override fun getIfExists(key: IntNonPreferenceKey): Int? = if (prefs.contains(key.key)) prefs.getInt(key.key, 0) else null
+    override fun put(key: IntNonPreferenceKey, value: Int) = prefs.edit().putInt(key.key, value).apply()
+    override fun put(key: IntComposedNonPreferenceKey, vararg arguments: Any, value: Int) = prefs.edit().putInt(key.key.format(*arguments), value).apply()
+    override fun inc(key: IntNonPreferenceKey) = prefs.edit().putInt(key.key, prefs.getInt(key.key, 0) + 1).apply()
+    override fun get(key: IntComposedNonPreferenceKey, vararg arguments: Any): Int = prefs.getInt(key.key.format(*arguments), key.defaultValue)
+    override fun get(key: IntPreferenceKey): Int = prefs.getInt(key.key, key.defaultValue)
+
+    override fun get(key: LongNonPreferenceKey): Long = prefs.getLong(key.key, key.defaultValue)
+    override fun getIfExists(key: LongNonPreferenceKey): Long? = if (prefs.contains(key.key)) prefs.getLong(key.key, 0L) else null
+    override fun put(key: LongNonPreferenceKey, value: Long) = prefs.edit().putLong(key.key, value).apply()
+    override fun get(key: LongPreferenceKey): Long = prefs.getLong(key.key, key.defaultValue)
+    override fun inc(key: LongNonPreferenceKey) = prefs.edit().putLong(key.key, prefs.getLong(key.key, 0L) + 1L).apply()
+    override fun get(key: LongComposedNonPreferenceKey, vararg arguments: Any): Long = prefs.getLong(key.key.format(*arguments), key.defaultValue)
+    override fun getIfExists(key: LongComposedNonPreferenceKey, vararg arguments: Any): Long? { val k = key.key.format(*arguments); return if (prefs.contains(k)) prefs.getLong(k, 0L) else null }
+    override fun put(key: LongComposedNonPreferenceKey, vararg arguments: Any, value: Long) = prefs.edit().putLong(key.key.format(*arguments), value).apply()
+
+    override fun remove(key: NonPreferenceKey) = prefs.edit().remove(key.key).apply()
+    override fun remove(key: ComposedKey, vararg arguments: Any) = prefs.edit().remove(key.key.format(*arguments)).apply()
+
+    override fun isUnitDependent(key: String): Boolean = false
+    override fun get(key: String): NonPreferenceKey? = null
+    override fun getIfExists(key: String): NonPreferenceKey? = null
+    override fun getDependingOn(key: String): List<PreferenceKey> = emptyList()
+    override fun registerPreferences(clazz: Class<out NonPreferenceKey>) {}
+    override fun allMatchingStrings(key: ComposedKey): List<String> = emptyList()
+    override fun allMatchingInts(key: ComposedKey): List<Int> = emptyList()
+    override fun isExportableKey(key: String): Boolean = false
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// WearDateUtil
-//
-// Port minimal de DateUtil d'AAPS.
-// MedtrumPump l'utilise pour formater les dates et obtenir l'heure courante.
-// ─────────────────────────────────────────────────────────────────────────
-class WearDateUtil : DateUtil {
+// ── WearTemporaryBasalStorage ─────────────────────────────────────────────
 
-    private val dtFormatter = SimpleDateFormat("dd/MM HH:mm:ss", Locale.getDefault())
-
-    override fun now(): Long = System.currentTimeMillis()
-
-    override fun dateAndTimeString(mills: Long): String =
-        dtFormatter.format(Date(mills))
-
-    override fun timeString(mills: Long): String =
-        SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(mills))
-
-    override fun dateString(mills: Long): String =
-        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(mills))
-
-    override fun secondsOfTheDayToMilliseconds(seconds: Int): Long =
-        seconds * 1000L
-
-    override fun toISOString(mills: Long): String =
-        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).format(Date(mills))
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// WearResourceHelper
-//
-// Port minimal de ResourceHelper d'AAPS.
-// MedtrumPump l'utilise pour les strings d'alarme (alarmStateToString).
-// ─────────────────────────────────────────────────────────────────────────
-class WearResourceHelper(private val context: Context) : ResourceHelper {
-
-    override fun gs(id: Int, vararg args: Any?): String =
-        try { context.getString(id) } catch (_: Exception) { "[$id]" }
-
-    override fun gs(id: Int, vararg args: Any): String =
-        try { context.getString(id, *args) } catch (_: Exception) { "[$id]" }
-
-    override fun gq(id: Int, quantity: Int, vararg args: Any): String =
-        try { context.resources.getQuantityString(id, quantity, *args) } catch (_: Exception) { "[$id]" }
-
-    override fun gb(id: Int): Boolean =
-        try { context.resources.getBoolean(id) } catch (_: Exception) { false }
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// WearTemporaryBasalStorage
-//
-// Stockage en mémoire des basals temporaires en attente de reconciliation.
-// Utilisé par MedtrumPump.handleBasalStatusUpdate() pour retrouver
-// la durée d'un TBR à partir de son timestamp et de son débit.
-// ─────────────────────────────────────────────────────────────────────────
 class WearTemporaryBasalStorage : TemporaryBasalStorage {
+    private val storage = ConcurrentHashMap<Long, PumpTemporaryBasal>()
 
-    // Map timestamp → PumpSync.PumpState.TemporaryBasal (en mémoire, thread-safe)
-    private val storage = ConcurrentHashMap<Long, PumpSync.PumpState.TemporaryBasal>()
-
-    override fun add(tbr: PumpSync.PumpState.TemporaryBasal) {
-        storage[tbr.timestamp] = tbr
-        // Nettoyer les entrées de plus de 2h (ne peuvent plus être reconciliées)
+    override fun add(temporaryBasal: PumpTemporaryBasal) {
+        storage[temporaryBasal.timestamp] = temporaryBasal
         val cutoff = System.currentTimeMillis() - 2 * 60 * 60 * 1000L
         storage.keys.filter { it < cutoff }.forEach { storage.remove(it) }
     }
 
-    /**
-     * Trouve un TBR correspondant au timestamp et au débit donnés.
-     * Tolérance : ±1 minute sur le timestamp, ±0.01 U/h sur le débit.
-     */
-    override fun findTemporaryBasal(timestamp: Long, rate: Double): PumpSync.PumpState.TemporaryBasal? {
-        val toleranceMs   = 60_000L   // ±1 minute
-        val toleranceRate = 0.01      // ±0.01 U/h
+    override fun findTemporaryBasal(timestamp: Long, rate: Double): PumpTemporaryBasal? =
+        storage.values.firstOrNull {
+            kotlin.math.abs(it.timestamp - timestamp) < 60_000L &&
+            kotlin.math.abs(it.rate - rate) < 0.01
+        }?.also { storage.remove(it.timestamp) }
 
-        return storage.values.firstOrNull { tbr ->
-            kotlin.math.abs(tbr.timestamp - timestamp) < toleranceMs &&
-            kotlin.math.abs(tbr.rate - rate) < toleranceRate
-        }?.also { found ->
-            // Supprimer après récupération (usage unique)
-            storage.remove(found.timestamp)
-        }
-    }
-
-    fun reset() = storage.clear()
+    override fun reset() = storage.clear()
 }
