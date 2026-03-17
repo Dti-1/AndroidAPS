@@ -21,28 +21,41 @@
     <!-- ═══ FEATURE BLE ══════════════════════════════════════════════ -->
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
 
+    <!-- ═══ DÉCLARATION STANDALONE WEAR OS ═══════════════════════════
+         android.hardware.type.watch  = c'est une app Wear OS
+         com.google.android.wearable.standalone = true
+         → l'app fonctionne SANS app compagnon sur le téléphone        -->
+    <uses-feature
+        android:name="android.hardware.type.watch"
+        android:required="true" />
+
     <application
         android:name=".WearApplication"
-        android:label="AAPS Wear Medtrum"
-        android:theme="@android:style/Theme.DeviceDefault">
+        android:label="AAPS Wear"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@android:style/Theme.DeviceDefault"
+        android:allowBackup="false">
+
+        <!-- Déclare l'app comme standalone — clé obligatoire -->
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
 
         <!-- ═══ ACTIVITÉ PRINCIPALE ══════════════════════════════════ -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
-            android:taskAffinity="">
+            android:taskAffinity=""
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <meta-data
-                android:name="com.google.android.wearable.standalone"
-                android:value="true" />
         </activity>
 
         <!-- ═══ BLE FOREGROUND SERVICE ═══════════════════════════════
              foregroundServiceType="connectedDevice" requis Android 14+
-             stopWithTask="false" : survit même si l'app est swipée     -->
+             stopWithTask="false" : survit si l'app est swipée         -->
         <service
             android:name=".WearBleService"
             android:enabled="true"

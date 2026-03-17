@@ -1,65 +1,83 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-
-buildscript {
-    repositories {
-        mavenCentral()
-        google()
-    }
-    dependencies {
-        classpath(libs.com.android.tools.build)
-        classpath(libs.com.google.gms)
-        classpath(libs.com.google.firebase.gradle)
-
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
-
-        classpath(libs.kotlin.gradlePlugin)
-        classpath(libs.kotlin.allopen)
-        classpath(libs.kotlin.serialization)
-    }
-}
+// build.gradle.kts — Module wear-medtrum
+//
+// App Wear OS STANDALONE — indépendante du téléphone.
+//
+// PRÉREQUIS : ajouter dans gradle/libs.versions.toml section [plugins] :
+//   android-application = { id = "com.android.application", version.ref = "gradlePlugin" }
 
 plugins {
-    alias(libs.plugins.klint)
-    alias(libs.plugins.moduleDependencyGraph)
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.compose.compiler) apply false
-    id(libs.plugins.android.test.get().pluginId) apply false
-    id(libs.plugins.kotlin.android.get().pluginId) apply false
+    alias(libs.plugins.compose.compiler)
 }
 
-allprojects {
-    repositories {
-        mavenCentral()
-        google()
-        maven("https://jitpack.io")
-    }
-    tasks.withType<KotlinCompile>().configureEach {
-        compilerOptions {
-            freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
-            freeCompilerArgs.add("-opt-in=kotlin.ExperimentalUnsignedTypes")
-            freeCompilerArgs.add("-Xannotation-default-target=param-property")
-            freeCompilerArgs.add("-Xjvm-default=all") //Support @JvmDefault
-            jvmTarget.set(Versions.jvmTarget)
-        }
-    }
-    gradle.projectsEvaluated {
-        tasks.withType<JavaCompile> {
-            val compilerArgs = options.compilerArgs
-            compilerArgs.add("-Xlint:deprecation")
-            compilerArgs.add("-Xlint:unchecked")
-        }
+android {
+    namespace  = "app.aaps.wear.medtrum"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "app.aaps.wear.medtrum"
+        minSdk        = 30   // Wear OS 3.0 = Android 11
+        targetSdk     = 35
+        versionCode   = 1
+        versionName   = "1.0.0"
     }
 
-    apply(plugin = "org.jlleitschuh.gradle.ktlint")
-    apply(plugin = "jacoco")
+    buildFeatures {
+        compose = true
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 }
 
-// Setup all reports aggregation
-apply(from = "jacoco_aggregation.gradle.kts")
+dependencies {
 
-tasks.register<Delete>("clean").configure {
-    delete(rootProject.layout.buildDirectory)
+    // ── Wear OS ──────────────────────────────────────────────────────
+    implementation(libs.androidx.wear)
+    implementation(libs.com.google.android.gms.playservices.wearable)
+    // compileOnly = SDK Wear présent sur la montre, pas besoin de l'embarquer
+    compileOnly(libs.com.google.android.wearable)
+    implementation(libs.com.google.android.wearable.support)
+
+    // ── Compose BOM + UI ─────────────────────────────────────────────
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.compose.material)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel)
+
+    // Wear Compose — absent du toml, versions en dur
+    implementation("androidx.wear.compose:compose-material:1.4.1")
+    implementation("androidx.wear.compose:compose-foundation:1.4.1")
+    implementation("androidx.wear.compose:compose-navigation:1.4.1")
+
+    // ── Coroutines ───────────────────────────────────────────────────
+    implementation(platform(libs.kotlinx.coroutines.bom))
+    implementation(libs.kotlinx.coroutines.android)
+
+    // ── Room DB ──────────────────────────────────────────────────────
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room)
+    ksp(libs.androidx.room.compiler)
+
+    // ── DataStore ────────────────────────────────────────────────────
+    implementation(libs.androidx.datastore.preferences)
+
+    // ── Modules AAPS du projet parent ────────────────────────────────
+    implementation(project(":core:interfaces"))
+    implementation(project(":core:data"))
+    implementation(project(":core:keys"))
+    implementation(project(":pump:medtrum"))
 }
